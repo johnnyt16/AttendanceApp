@@ -18,20 +18,34 @@ const Login = () => {
     setPassword(e.target.value);
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (email === 'admin@school.com' && password === 'password') {
-        window.location.href = '/dashboard';
-      } else {
-        setError('Invalid email or password. Try admin@school.com / password');
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      navigate('/dashboard');
+    } catch {
+      setError('Server error');
+    } finally {
       setIsLoading(false);
-    }, 800);
-  }, [email, password]);
+    }
+  }, [email, password, navigate]);
 
   const handleRegisterClick = () => {
     navigate('/register');
