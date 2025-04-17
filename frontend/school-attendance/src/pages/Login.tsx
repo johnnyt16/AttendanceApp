@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -18,38 +18,44 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>School Attendance System</h1>
-        <h2>Login</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="login-button">
-            Login
-          </button>
-        </form>
+      <div className="login-container">
+        <div className="login-card">
+          <h1>School Attendance System</h1>
+          <h2>Login</h2>
+          {error && <div className="error-message">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+              />
+            </div>
+            <button type="submit" className="login-button">
+              Login
+            </button>
+          </form>
+
+          <p style={{fontSize: '30px', background: 'red'}}>
+            YOU SHOULD SEE THIS TEXT
+          </p>
+
+        </div>
       </div>
-    </div>
   );
 };
 

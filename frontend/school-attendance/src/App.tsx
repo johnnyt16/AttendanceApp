@@ -39,6 +39,10 @@ const LoginForm = () => {
     }, 800);
   }, [email, password]);
 
+  const handleRegisterClick = () => {
+    alert('TODO: switch to register form or page');
+  };
+
   return (
     <div className="login-page">
       <div className="login-container">
@@ -47,53 +51,56 @@ const LoginForm = () => {
             <h1>AttendEase</h1>
             <p>Sign in to manage classroom attendance</p>
           </div>
-          
+
           {error && (
-            <div className="error-alert">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              {error}
-            </div>
+              <div className="error-alert">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                {error}
+              </div>
           )}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email</label>
-              <input 
-                type="email" 
-                id="email"
-                value={email}
-                onChange={handleEmailChange}
-                placeholder="admin@school.com"
-                required 
+              <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  placeholder="admin@school.com"
+                  required
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input 
-                type="password" 
-                id="password"
-                value={password}
-                onChange={handlePasswordChange}
-                placeholder="password"
-                required 
+              <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="password"
+                  required
               />
               <div className="password-help">
                 <a href="#">Forgot password?</a>
               </div>
             </div>
-            
-            <button 
-              type="submit" 
-              className="login-button"
-              disabled={isLoading}
+            <button
+                type="submit"
+                className="login-button"
+                disabled={isLoading}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
+            <div className="register-link">
+              <button onClick={handleRegisterClick}>Don't have an account? Register</button>
+            </div>
           </form>
 
           <div className="login-footer">
@@ -107,22 +114,22 @@ const LoginForm = () => {
 
 // Create a placeholder component for routes not yet implemented
 const PlaceholderPage = () => (
-  <Layout>
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <h2>Coming Soon</h2>
-      <p>This feature is under development and will be available soon.</p>
-    </div>
-  </Layout>
+    <Layout>
+      <div style={{padding: "2rem", textAlign: "center"}}>
+        <h2>Coming Soon</h2>
+        <p>This feature is under development and will be available soon.</p>
+      </div>
+    </Layout>
 );
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LoginForm />} />
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/class/:classId" element={<ClassDetails />} />
+      <Router>
+        <Routes>
+          <Route path="/" element={<LoginForm/>}/>
+          <Route path="/login" element={<LoginForm/>}/>
+          <Route path="/dashboard" element={<Dashboard/>}/>
+          <Route path="/class/:classId" element={<ClassDetails />} />
         <Route path="/trends" element={<Trends />} />
         <Route path="/classes" element={<Classes />} />
         <Route path="/students" element={<Students />} />

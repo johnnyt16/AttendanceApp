@@ -165,6 +165,25 @@ form {
   cursor: not-allowed;
 }
 
+.register-link {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.register-link button {
+  background: none;
+  border: none;
+  color: #3498db;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.register-link button:hover {
+  color: #217dbb;
+  text-decoration: underline;
+}
+
 .login-footer {
   padding: 1rem;
   text-align: center;
