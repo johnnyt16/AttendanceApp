@@ -7,6 +7,7 @@ import Trends from './pages/Trends';
 import Classes from './pages/Classes';
 import Students from './pages/Students';
 import Layout from './components/Layout';
+import Register from './pages/Register';
 
 const PlaceholderPage = () => (
     <Layout>
@@ -30,6 +31,7 @@ function App() {
           <Route path="/students" element={<Students />} />
           <Route path="/reports" element={<PlaceholderPage />} />
           <Route path="/settings" element={<PlaceholderPage />} />
+          <Route path="/register" element={<Register />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
