@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../api';
 
 const Register = () => {
     const [email, setEmail] = useState('');
@@ -13,18 +14,10 @@ const Register = () => {
         setSuccess('');
 
         try {
-            const res = await fetch('http://localhost:3000/api/auth/register', {
+            await apiFetch('/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, name, password }),
+                body: JSON.stringify({ email, name, password })
             });
-
-            if (res.ok) {
-                setSuccess('Registration successful! You can now log in.');
-            } else {
-                const data = await res.json();
-                setError(data.message || 'Registration failed');
-            }
         } catch {
             setError('Server error');
         }

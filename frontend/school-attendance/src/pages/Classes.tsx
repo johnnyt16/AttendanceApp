@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import '../styles/Classes.css';
+import { apiFetch } from '../api';
 
 // Interface for class data
 interface ClassItem {
@@ -43,6 +44,19 @@ const Classes = () => {
     grade: '',
     status: ''
   });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiFetch<ClassItem[]>('/classes');
+        setClasses(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
   
   // Simulate loading data
   useEffect(() => {

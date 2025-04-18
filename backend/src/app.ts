@@ -10,8 +10,8 @@ const app = express();
 
 app.use(
     cors({
-        origin: 'http://localhost:5174',
-        credentials: true,
+        origin: [/^http:\/\/localhost:517\d$/],   // matches 5173, 5174, etc.
+        credentials: true
     })
 );
 app.use(express.json());
