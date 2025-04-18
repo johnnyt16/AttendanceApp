@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.routes';
 import schoolRoutes from './routes/school.routes';
 import classRoutes from './routes/class.routes';
 import attendanceRoutes from './routes/attendance.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 import cors from 'cors';
 
 const app = express();
@@ -23,5 +24,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/schools', schoolRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 export default app;
