@@ -3,6 +3,8 @@ import json
 import face_recognition
 import pickle
 from pathlib import Path
+import shutil
+from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # points to /backend
 ENCODINGS_PATH = BASE_DIR / "services" / "output" / "encodings.pkl"
