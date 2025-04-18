@@ -5,6 +5,8 @@ import { execFile } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import util from 'util';
 
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 const execFileAsync = util.promisify(execFile);
 
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
@@ -51,6 +53,7 @@ export const uploadCameraImage = async (req: Request, res: Response) => {
     try {
         const { deviceId } = req.params;
         const file = (req as any).file; // populated by multer
+        console.log('[upload] started', deviceId);
 
         if (!file) return void res.status(400).json({ message: 'No file uploaded' });
 
@@ -101,7 +104,6 @@ export const uploadCameraImage = async (req: Request, res: Response) => {
 
         // 5. Insert recognized students
         // TODO: This is hacky. Figure out how to generate embeddings with sanitized names
-        let validCount = 0;
         for (const rawName of recognizedNames) {
             // Convert "Last,_First" → "First Last"
             const cleaned = rawName.replace(/_/g, ' ').trim();         // "Rydell, Edward"
@@ -125,14 +127,27 @@ export const uploadCameraImage = async (req: Request, res: Response) => {
 
             const studentId = rows[0].id;
 
-            await pool.query(
-                `INSERT INTO recognized_faces (capture_id, student_id, confidence_score)
+            try {
+                await pool.query(
+                    `INSERT INTO recognized_faces (capture_id, student_id, confidence_score)
                  VALUES ($1, $2, 1)
                  ON CONFLICT DO NOTHING`,
-                [captureId, studentId]
-            );
-        }
+                    [captureId, studentId]
+                );
 
+                await pool.query(
+                    `INSERT INTO attendance_records (student_id, class_id, date, status, marked_by)
+                     SELECT $1, c.class_id, CURRENT_DATE, 'present', $2
+                     FROM cameras c
+                     WHERE c.id = $3
+                     ON CONFLICT (student_id, class_id, date) DO UPDATE
+                         SET status = 'present', marked_by = EXCLUDED.marked_by`,
+                    [studentId, SYSTEM_USER_ID, cameraId] // ← systemUserId = dummy user UUID
+                );
+            } catch (err) {
+                console.error('[DB ERROR]', rawName, JSON.stringify(err, null, 2));
+            }
+        }
         res.json({ ok: true, recognized: recognizedNames });
     } catch (e) {
         console.error(e);

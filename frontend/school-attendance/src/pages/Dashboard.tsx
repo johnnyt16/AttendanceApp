@@ -36,31 +36,45 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const json: DashboardData = await res.json();
+      setData(json);
+      setFilteredClasses(json.recentClasses);
+    } catch (err) {
+      console.error('Failed to load dashboard data', err);
+      setError('Failed to load dashboard data. Please try again.');
+      setData(null);
+      setFilteredClasses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const json = await res.json();
-        setData(json);
-        setFilteredClasses(json.recentClasses);
-      } catch (err) {
-        console.error('Failed to load dashboard data', err);
-      }
-    };
-
     fetchData();
   }, []);
 
   useEffect(() => {
     if (!data) return;
-
     const term = searchTerm.toLowerCase().trim();
+
     if (!term) {
       setFilteredClasses(data.recentClasses);
       return;
@@ -74,12 +88,37 @@ const Dashboard = () => {
     setFilteredClasses(filtered);
   }, [searchTerm, data]);
 
-  if (!data) {
+  if (loading) {
     return (
         <Layout>
           <div className="loading-spinner">
             <div className="spinner"></div>
             <p>Loading dashboard...</p>
+          </div>
+        </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+        <Layout>
+          <div className="error-message">
+            <h2>Dashboard Error</h2>
+            <p>{error}</p>
+            <button onClick={fetchData} className="retry-button">
+              Try Again
+            </button>
+          </div>
+        </Layout>
+    );
+  }
+
+  if (!data) {
+    return (
+        <Layout>
+          <div className="error-message">
+            <h2>No data available</h2>
+            <p>Unable to fetch dashboard data.</p>
           </div>
         </Layout>
     );
@@ -204,6 +243,7 @@ const Dashboard = () => {
                 </div>
             )}
           </div>
+
           <section className="camera-status">
             <div className="section-header">
               <h2>Cameras</h2>
@@ -214,8 +254,8 @@ const Dashboard = () => {
                     <div className="camera-header">
                       <h3>{camera.location}</h3>
                       <span className={`status-indicator ${camera.status}`}>
-            {camera.status}
-          </span>
+                    {camera.status}
+                  </span>
                     </div>
                     <div className="camera-details">
                       <div className="detail-row">
@@ -231,7 +271,6 @@ const Dashboard = () => {
               ))}
             </div>
           </section>
-
         </div>
       </Layout>
   );
