@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attendance_records {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id String    @db.Uuid
+  class_id   String    @db.Uuid
+  date       DateTime  @db.Date
+  status     String
+  marked_by  String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  classes    classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [marked_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  students   students  @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([student_id, class_id, date])
+}
+
+model camera_captures {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  camera_id        String             @db.Uuid
+  image_path       String
+  captured_at      DateTime           @db.Timestamptz(6)
+  class_id         String?            @db.Uuid
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  cameras          cameras            @relation(fields: [camera_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  classes          classes?           @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recognized_faces recognized_faces[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cameras {
+  device_id       String            @unique
+  location        String
+  status          String            @default("offline")
+  school_id       String?           @db.Uuid
+  class_id        String?           @db.Uuid
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  id              String            @id @db.Uuid
+  camera_captures camera_captures[]
+  classes         classes?          @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  schools         schools?          @relation(fields: [school_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([class_id], map: "idx_cameras_class_id")
+  @@index([school_id], map: "idx_cameras_school_id")
+}
+
+model classes {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  teacher_id         String               @db.Uuid
+  school_id          String               @db.Uuid
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
+  camera_captures    camera_captures[]
+  cameras            cameras[]
+  schools            schools              @relation(fields: [school_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users                @relation(fields: [teacher_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  enrollments        enrollments[]
+}
+
+model enrollments {
+  student_id  String    @db.Uuid
+  class_id    String    @db.Uuid
+  enrolled_at DateTime? @default(now()) @db.Timestamptz(6)
+  classes     classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students    students  @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([student_id, class_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model recognized_faces {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  capture_id       String          @db.Uuid
+  student_id       String          @db.Uuid
+  confidence_score Decimal         @db.Decimal(5, 2)
+  created_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  camera_captures  camera_captures @relation(fields: [capture_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students         students        @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model schools {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?  @default(now()) @db.Timestamptz(6)
+  cameras    cameras[]
+  classes    classes[]
+  students   students[]
+}
+
+model student_images {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id  String    @db.Uuid
+  image_path  String
+  uploaded_at DateTime? @default(now()) @db.Timestamptz(6)
+  is_active   Boolean?  @default(true)
+  students    students  @relation(fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model students {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name          String
+  school_id          String               @db.Uuid
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
+  enrollments        enrollments[]
+  recognized_faces   recognized_faces[]
+  student_images     student_images[]
+  schools            schools              @relation(fields: [school_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String               @unique
+  password_hash      String
+  full_name          String
+  role               String
+  school_id          String?              @db.Uuid
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  attendance_records attendance_records[]
+  classes            classes[]
+}
