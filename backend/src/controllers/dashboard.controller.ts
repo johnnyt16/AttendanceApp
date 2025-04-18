@@ -1,58 +1,80 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
-import pool from "../config/db";
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
+        console.log("ere");
         const user = req.user!;
+        console.log('[dashboard] user:', JSON.stringify(user, null, 2));
+        const isAdmin = user.role === 'admin';
+        console.log('[dashboard] user:', JSON.stringify(user, null, 2));
 
-        // Get total students at the school
-        const totalStudentsResult = await db.query(
-            'SELECT COUNT(*) FROM students WHERE school_id = $1',
-            [user.school_id]
-        );
-        const totalStudents = Number(totalStudentsResult.rows[0].count);
+        const studentQuery = isAdmin
+            ? `SELECT * FROM students WHERE school_id = $1`
+            : `SELECT s.* FROM students s
+                                   JOIN enrollments e ON s.id = e.student_id
+                                   JOIN classes c ON e.class_id = c.id
+               WHERE c.teacher_id = $1 AND c.school_id = $2`;
 
-        // Get today's present and absent counts
-        const presentResult = await db.query(
-            `SELECT COUNT(*) FROM attendance_records
-             WHERE date = CURRENT_DATE AND status = 'present'
-               AND student_id IN (
-                 SELECT id FROM students WHERE school_id = $1
-             )`,
-            [user.school_id]
-        );
-        const absentResult = await db.query(
-            `SELECT COUNT(*) FROM attendance_records
-             WHERE date = CURRENT_DATE AND status = 'absent'
-               AND student_id IN (
-                 SELECT id FROM students WHERE school_id = $1
-             )`,
-            [user.school_id]
-        );
+        const studentParams = isAdmin
+            ? [user.school_id]
+            : [user.user_id, user.school_id];
+        const studentResult = await db.query(studentQuery, studentParams);
+        console.log('[dashboard] students:', studentResult.rows.length);
 
-        const presentToday = Number(presentResult.rows[0].count);
-        const absentToday = Number(absentResult.rows[0].count);
+        const studentIds = studentResult.rows.map((s) => s.id);
+        const studentIdList = studentIds.length
+            ? `'${studentIds.join("','")}'`
+            : '';
 
+        let presentResult = { rows: [] }, absentResult = { rows: [] };
+        if (studentIds.length > 0) {
+            presentResult = await db.query(
+                `SELECT * FROM attendance_records
+                 WHERE status = 'present' AND student_id IN (${studentIdList})`
+            );
+            absentResult = await db.query(
+                `SELECT * FROM attendance_records
+                 WHERE status = 'absent' AND student_id IN (${studentIdList})`
+            );
+        }
+
+        const totalStudents = studentResult.rows.length;
+        const presentToday = presentResult.rows.length;
+        const absentToday = absentResult.rows.length;
         const attendanceRate = totalStudents
             ? ((presentToday / totalStudents) * 100).toFixed(1) + '%'
             : '0%';
 
-        // Get recent classes with attendance
-        const recentClassesResult = await db.query(
-            `SELECT c.id, c.name, u.full_name AS teacher,
-            COUNT(ar.*) FILTER (WHERE ar.status = 'present') AS present,
-            COUNT(ar.*) FILTER (WHERE ar.status = 'absent') AS absent,
-            MAX(ar.created_at) AS last_scan
-            FROM classes c
-            JOIN users u ON c.teacher_id = u.id
-            LEFT JOIN attendance_records ar ON ar.class_id = c.id AND ar.date = CURRENT_DATE
-            WHERE c.school_id = $1
-            GROUP BY c.id, u.full_name
-            ORDER BY last_scan DESC NULLS LAST
-            LIMIT 6`,
-            [user.school_id]
-        );
+        const classQuery = isAdmin
+            ? `SELECT c.id, c.name, u.full_name AS teacher,
+                      COUNT(ar.*) FILTER (WHERE ar.status = 'present') AS present,
+                      COUNT(ar.*) FILTER (WHERE ar.status = 'absent') AS absent,
+                      MAX(ar.created_at) AS last_scan
+               FROM classes c
+                        JOIN users u ON c.teacher_id = u.id
+                        LEFT JOIN attendance_records ar ON ar.class_id = c.id
+               WHERE c.school_id = $1
+               GROUP BY c.id, u.full_name
+               ORDER BY last_scan DESC NULLS LAST
+               LIMIT 6`
+            : `SELECT c.id, c.name, u.full_name AS teacher,
+                      COUNT(ar.*) FILTER (WHERE ar.status = 'present') AS present,
+                      COUNT(ar.*) FILTER (WHERE ar.status = 'absent') AS absent,
+                      MAX(ar.created_at) AS last_scan
+               FROM classes c
+                        JOIN users u ON c.teacher_id = u.id
+                        LEFT JOIN attendance_records ar ON ar.class_id = c.id
+               WHERE c.teacher_id = $1 AND c.school_id = $2
+               GROUP BY c.id, u.full_name
+               ORDER BY last_scan DESC NULLS LAST
+               LIMIT 6`;
+
+        const classParams = isAdmin
+            ? [user.school_id]
+            : [user.user_id, user.school_id];
+        const recentClassesResult = await db.query(classQuery, classParams);
+        console.log('[dashboard] recent classes:', recentClassesResult.rows);
 
         const recentClasses = recentClassesResult.rows.map((c) => ({
             id: c.id,
@@ -62,22 +84,26 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             absent: Number(c.absent),
             time: new Date(c.last_scan).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             lastScan: timeAgo(c.last_scan),
-            schedule: 'N/A', // Placeholder unless you add schedule to the DB
-            status: Math.random() < 0.7 ? 'online' : 'offline', // Random for now
+            schedule: 'N/A',
+            status: Math.random() < 0.7 ? 'online' : 'offline',
         }));
 
-        const { rows: cameraRows } = await pool.query(`
-            SELECT id, location, status, last_scan, students_scanned
-            FROM cameras
-            WHERE school_id = $1
-        `, [user.school_id]);
+        const camerasQuery = isAdmin
+            ? `SELECT * FROM cameras WHERE school_id = $1`
+            : `SELECT cam.* FROM cameras cam
+               JOIN classes c ON cam.class_id = c.id
+               WHERE c.teacher_id = $1`;
+
+        const camerasParams = isAdmin ? [user.school_id] : [user.user_id];
+        const { rows: cameraRows } = await db.query(camerasQuery, camerasParams);
+        console.log('[dashboard] cameras:', cameraRows);
 
         const cameras = cameraRows.map((c) => ({
             id: c.id,
             location: c.location,
             status: c.status,
-            lastScan: timeAgo(c.last_scan),
-            studentsScanned: Number(c.students_scanned),
+            lastScan: timeAgo(c.created_at),
+            studentsScanned: 0, // placeholder
         }));
 
         res.json({
@@ -89,7 +115,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             cameras,
         });
     } catch (err) {
-        console.error(err);
+        console.error('dashboard error:', err);
         res.sendStatus(500);
     }
 };

@@ -38,7 +38,7 @@ const mockStudents: Student[] = [
 ];
 
 const Students = () => {
-  const [students, setStudents] = useState<Student[]>(mockStudents);
+  const [students] = useState<Student[]>(mockStudents);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>(mockStudents);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
