@@ -1,25 +1,37 @@
-import {RequestHandler, Response} from 'express';
+import { RequestHandler } from 'express';
 import pool from '../config/db';
-import { AuthRequest } from '../middlewares/auth.middleware';
+import { AuthenticatedRequest } from '../types/auth.types';
 
-export const createSchool: RequestHandler = async (req: AuthRequest, res: Response) => {
-    const { name } = req.body;
-    if (!name) res.status(400).json({ message: 'Name required' });
+interface CreateSchoolBody {
+    name: string;
+}
+
+export const createSchool: RequestHandler<{}, any, CreateSchoolBody> = async (
+    req,
+    res
+) => {
+    const user = (req as unknown as AuthenticatedRequest).user;
+
+    if (!req.body.name) {
+        res.status(400).json({ message: 'Name required' });
+        return;
+    }
 
     const { rows } = await pool.query(
         `INSERT INTO schools (name) VALUES ($1) RETURNING *`,
-        [name]
+        [req.body.name]
     );
+
     res.status(201).json(rows[0]);
 };
 
-export const listMySchools = async (req: AuthRequest, res: Response) => {
-    const { role, schoolId } = req.user!;
+export const listMySchools: RequestHandler = async (req, res) => {
+    const user = (req as unknown as AuthenticatedRequest).user!;
     const sql =
-        role === 'admin'
+        user.role === 'admin'
             ? 'SELECT * FROM schools'
             : 'SELECT * FROM schools WHERE id = $1';
-    const params = role === 'admin' ? [] : [schoolId];
+    const params = user.role === 'admin' ? [] : [user.school_id];
 
     const { rows } = await pool.query(sql, params);
     res.json(rows);

@@ -1,41 +1,33 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import {AuthPayload} from "../types/auth.types";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-
-export interface AuthRequest extends Request {
-    user?: { userId: string; role: 'admin' | 'teacher'; schoolId: string };
-}
+type Role = 'admin' | 'teacher';
 
 export const requireAuth =
-    (...allowedRoles: ('admin' | 'teacher')[]): RequestHandler =>
-        (req: AuthRequest, res: Response, next: NextFunction): void => {
+    (...allowedRoles: Role[]): RequestHandler =>
+        (req: Request, res: Response, next: NextFunction): void => {
             const header = req.headers.authorization;
 
-            // No token
             if (!header?.startsWith('Bearer ')) {
-                res.sendStatus(401);
+                res.sendStatus(401); // Unauthorized
                 return;
             }
 
             try {
-                const payload = jwt.verify(header.split(' ')[1], JWT_SECRET) as AuthRequest['user'] | null;
-
-                // Empty / malformed payload
-                if (!payload) {
-                    res.sendStatus(401);
-                    return;
-                }
+                const token = header.split(' ')[1];
+                const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
 
                 // Role check
                 if (allowedRoles.length && !allowedRoles.includes(payload.role)) {
-                    res.sendStatus(403);
+                    res.sendStatus(403); // Forbidden
                     return;
                 }
 
                 req.user = payload;
                 next();
-            } catch {
-                res.sendStatus(401);
+            } catch (err) {
+                res.sendStatus(401); // Invalid token
             }
         };

@@ -13,13 +13,21 @@ interface ClassInfo {
   status: 'online' | 'offline';
 }
 
+interface CameraInfo {
+  id: string;
+  location: string;
+  status: 'online' | 'offline';
+  lastScan: string;
+  studentsScanned: number;
+}
+
 interface DashboardData {
   totalStudents: number;
   presentToday: number;
   absentToday: number;
   attendanceRate: string;
   recentClasses: ClassInfo[];
-  // cameras: optional for now
+  cameras: CameraInfo[];
 }
 
 const Dashboard = () => {
@@ -196,6 +204,34 @@ const Dashboard = () => {
                 </div>
             )}
           </div>
+          <section className="camera-status">
+            <div className="section-header">
+              <h2>Cameras</h2>
+            </div>
+            <div className="camera-grid">
+              {data.cameras.map((camera) => (
+                  <div key={camera.id} className={`camera-card ${camera.status}`}>
+                    <div className="camera-header">
+                      <h3>{camera.location}</h3>
+                      <span className={`status-indicator ${camera.status}`}>
+            {camera.status}
+          </span>
+                    </div>
+                    <div className="camera-details">
+                      <div className="detail-row">
+                        <span>Last Scan:</span>
+                        <span>{camera.lastScan}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span>Students Scanned:</span>
+                        <span>{camera.studentsScanned}</span>
+                      </div>
+                    </div>
+                  </div>
+              ))}
+            </div>
+          </section>
+
         </div>
       </Layout>
   );

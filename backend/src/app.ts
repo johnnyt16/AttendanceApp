@@ -5,6 +5,7 @@ import schoolRoutes from './routes/school.routes';
 import classRoutes from './routes/class.routes';
 import attendanceRoutes from './routes/attendance.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import cameraRoutes from './routes/camera.routes';
 import cors from 'cors';
 
 const app = express();
@@ -25,5 +26,6 @@ app.use('/api/schools', schoolRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/cameras', cameraRoutes);
 
 export default app;

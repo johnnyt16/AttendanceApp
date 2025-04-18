@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
+import pool from "../config/db";
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
@@ -40,16 +41,16 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         // Get recent classes with attendance
         const recentClassesResult = await db.query(
             `SELECT c.id, c.name, u.full_name AS teacher,
-              COUNT(ar.*) FILTER (WHERE ar.status = 'present') AS present,
-              COUNT(ar.*) FILTER (WHERE ar.status = 'absent') AS absent,
-              MAX(ar.created_at) AS last_scan
-       FROM classes c
-       JOIN users u ON c.teacher_id = u.id
-       LEFT JOIN attendance_records ar ON ar.class_id = c.id AND ar.date = CURRENT_DATE
-       WHERE c.school_id = $1
-       GROUP BY c.id, u.full_name
-       ORDER BY last_scan DESC NULLS LAST
-       LIMIT 6`,
+            COUNT(ar.*) FILTER (WHERE ar.status = 'present') AS present,
+            COUNT(ar.*) FILTER (WHERE ar.status = 'absent') AS absent,
+            MAX(ar.created_at) AS last_scan
+            FROM classes c
+            JOIN users u ON c.teacher_id = u.id
+            LEFT JOIN attendance_records ar ON ar.class_id = c.id AND ar.date = CURRENT_DATE
+            WHERE c.school_id = $1
+            GROUP BY c.id, u.full_name
+            ORDER BY last_scan DESC NULLS LAST
+            LIMIT 6`,
             [user.school_id]
         );
 
@@ -65,11 +66,19 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             status: Math.random() < 0.7 ? 'online' : 'offline', // Random for now
         }));
 
-        // Fake camera data for now
-        const cameras = [
-            { id: 1, location: 'Main Entrance', status: 'online', lastScan: '2 mins ago', studentsScanned: 42 },
-            { id: 2, location: 'North Wing', status: 'online', lastScan: '5 mins ago', studentsScanned: 78 },
-        ];
+        const { rows: cameraRows } = await pool.query(`
+            SELECT id, location, status, last_scan, students_scanned
+            FROM cameras
+            WHERE school_id = $1
+        `, [user.school_id]);
+
+        const cameras = cameraRows.map((c) => ({
+            id: c.id,
+            location: c.location,
+            status: c.status,
+            lastScan: timeAgo(c.last_scan),
+            studentsScanned: Number(c.students_scanned),
+        }));
 
         res.json({
             totalStudents,

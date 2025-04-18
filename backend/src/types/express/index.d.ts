@@ -1,10 +1,9 @@
-// types/express/index.d.ts
-import { User } from '../user.types'; // adjust path to where your User type is defined
+import { AuthPayload } from '../auth.types';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: User;
+            user?: AuthPayload;
         }
     }
 }
